@@ -199,6 +199,12 @@ namespace NearClientUnity
             return result;
         }
 
+        // public async Task ProcessSingAndSendTransactionAsync()
+        // {
+        //     var localKey = await _connection.Signer.GetPublicKeyAsync();
+        //     var accessKey = 
+        // }
+        
         /// Returns array of {access_key: AccessKey, public_key: PublicKey} items.
         public async Task<dynamic> GetAccessKeysAsync()
         {
@@ -323,7 +329,7 @@ namespace NearClientUnity
                 $"Exceeded {TxStatusRetryNumber} status check attempts for transaction ${Base58.Encode(txHash)}");
         }
 
-        private async Task<FinalExecutionOutcome> SignAndSendTransactionAsync(string receiverId, Action[] actions)
+        public async Task<FinalExecutionOutcome> SignAndSendTransactionAsync(string receiverId, Action[] actions)
         {
             if (!await GetReadyStatusAsync())
             {

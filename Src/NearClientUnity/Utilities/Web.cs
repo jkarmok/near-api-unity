@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using UnityEngine;
 
 namespace NearClientUnity.Utilities
 {
@@ -12,6 +13,7 @@ namespace NearClientUnity.Utilities
     {
         public static async Task<dynamic> FetchJsonAsync(string url, string json = "")
         {
+            Debug.Log("url: " + url + " json: " + json);
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

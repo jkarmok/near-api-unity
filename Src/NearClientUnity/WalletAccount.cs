@@ -4,11 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Dynamic;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Util;
+using NearClientUnity.Providers;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace NearClientUnity
 {
@@ -41,11 +45,12 @@ namespace NearClientUnity
            
             if (_authStorage.HasKey(_authDataKey))
             {
-                _authData.AccountId = _authStorage.GetValue(_authDataKey);
+                _authData = JObject.Parse(_authStorage.GetValue(_authDataKey));
             }
             else
             {
                 _authData.AccountId = null;
+                _authData.AllKeys = new List<string>();
             }
         }
 
@@ -57,11 +62,14 @@ namespace NearClientUnity
             Uri uri = new Uri(url);
             string publicKey = HttpUtility.ParseQueryString(uri.Query).Get("public_key");
             string accountId = HttpUtility.ParseQueryString(uri.Query).Get("account_id");
+            string allKeys = HttpUtility.ParseQueryString(uri.Query).Get("all_keys");
+            
             _authData.AccountId = accountId;
+            _authData.AllKeys = allKeys;
 
             try
             {
-                _authStorage.Add(_authDataKey, accountId);                
+                _authStorage.Add(_authDataKey, JsonConvert.SerializeObject(_authData));                
                 await MoveKeyFromTempToPermanent(accountId, publicKey);
             }
             catch (Exception e)
@@ -141,6 +149,126 @@ namespace NearClientUnity
             {
                 throw e;
             }
+        }
+        
+        /*
+         async accessKeyMatchesTransaction(accessKey, receiverId, actions) {
+            const { access_key: { permission } } = accessKey;
+            if (permission === 'FullAccess') {
+                return true;
+            }
+            if (permission.FunctionCall) {
+                const { receiver_id: allowedReceiverId, method_names: allowedMethods } = permission.FunctionCall;
+            if (allowedReceiverId === this.accountId && allowedMethods.includes(MULTISIG_HAS_METHOD)) {
+                return true;
+            }
+            if (allowedReceiverId === receiverId) {
+                    if (actions.length !== 1) {
+                        return false;
+                    }
+                    const [{ functionCall }] = actions;
+                    return functionCall &&
+                           (!functionCall.deposit || functionCall.deposit.toString() === '0') && // TODO: Should support charging amount smaller than allowance?
+                           (allowedMethods.length === 0 || allowedMethods.includes(functionCall.methodName));
+                    // TODO: Handle cases when allowance doesn't have enough to pay for gas
+                }
+            }
+            // TODO: Support other permissions than FunctionCall
+            return false;
+        }
+        */
+
+        private async Task<FinalExecutionOutcome> SignAndSendTransactionAsync(string receiverId, Action[] actions, Account account, Connection connection)
+        {
+            PublicKey localKey = await connection.Signer.GetPublicKeyAsync();
+            dynamic accessKey = AccessKeyForTransaction(account, receiverId, actions, localKey);
+            if (accessKey == null)
+            {
+                throw new Exception($"Cannot find matching key for transaction sent to {receiverId}");
+            }
+
+            if (localKey != null && localKey.ToString() == accessKey.public_key)
+            {
+                try
+                {
+                    return await account.SignAndSendTransactionAsync(receiverId, actions);
+                }
+                catch (Exception ex) {
+                    // TODO: type error
+                    if (ex.Message == "NotEnoughAllowance")
+                    {
+                        accessKey = await this.AccessKeyForTransaction(account, receiverId, actions, null);
+                    }
+                    else {
+                        throw;
+                    }
+                }
+            }
+
+            var block = await connection.Provider.GetBlockAsync();
+        }
+        
+        private bool AccessKeyMatchesTransaction(dynamic accessKey, string receiverId, Action[] actions)
+        {
+            if (accessKey.permission == "FullAccess")
+            {
+                return true;
+            }
+            // else PermissionType == FunctionCall
+            List<string> allowedMethods = accessKey.permission.FunctionCall.method_names.ToList();
+            string allowedReceiverId = accessKey.permission.FunctionCall.receiver_id;
+            if (allowedReceiverId == GetAccountId() && allowedMethods.Contains("add_request_and_confirm"))
+            {
+                return true;
+            }
+
+            if (allowedReceiverId == receiverId)
+            {
+                if (actions.Length != 1)
+                {
+                    return false;
+                }
+
+                var action = actions[0];
+                return action != null && (action.Args.Deposit == 0) &&
+                       (allowedMethods.Count == 0 || allowedMethods.Contains(action?.Args.MethodName));
+            }
+
+            return false;
+        }
+
+        private async Task<dynamic> AccessKeyForTransaction(Account account, string receiverId, Action[] actions, PublicKey localKey)
+        {
+            var rawAccessKeys = await account.GetAccessKeysAsync();
+            var accessKeys = new List<dynamic>();
+
+            foreach (dynamic key in rawAccessKeys.keys)
+            {
+                accessKeys.Add(key);
+            }
+            
+            var accessKey = accessKeys.ToList().Find(key => key.public_key.toString() == localKey.ToString());
+            
+            if (accessKey && AccessKeyMatchesTransaction(accessKey, receiverId, actions))
+            {
+                return accessKey;
+            }
+
+            var walletKeys = new List<string>();
+            foreach (dynamic key in _authData.AllKeys)
+            {
+                accessKeys.Add(key);
+            }
+            
+            foreach (var key in accessKeys)
+            {
+                if (walletKeys.Contains(key.public_key) && AccessKeyMatchesTransaction(key, receiverId, actions))
+                {
+                    return key;
+                }
+            }
+            
+            return null;
         }
     }
 }
