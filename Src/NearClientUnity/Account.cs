@@ -14,7 +14,7 @@ namespace NearClientUnity
         // Default amount of tokens to be send with the function calls. Used to pay for the fees
         // incurred while running the contract execution. The unused amount will be refunded back to
         // the originator.
-        public const int DefaultFuncCallAmount = 2000000;
+        // public const int DefaultFuncCallAmount = 2000000;
 
         private const int TxStatusRetryNumber = 10;
         private const int TxStatusRetryWait = 500;
@@ -185,19 +185,19 @@ namespace NearClientUnity
             }
         }
 
-        public async Task<FinalExecutionOutcome> FunctionCallAsync(string contractId, string methodName, dynamic args, ulong? gas = null, Nullable<UInt128> amount = null)
-        {
-            if (args == null)
-            {
-                args = new ExpandoObject();
-            }
-
-            var methodArgs = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(args));
-            var gasValue = gas ?? DefaultFuncCallAmount;
-            var amountValue = amount ?? DefaultFuncCallAmount;
-            var result = await SignAndSendTransactionAsync(contractId, new Action[] { Action.FunctionCall(methodName, methodArgs, gasValue, amountValue) });
-            return result;
-        }
+        // public async Task<FinalExecutionOutcome> FunctionCallAsync(string contractId, string methodName, dynamic args, ulong? gas = null, Nullable<UInt128> amount = null)
+        // {
+        //     if (args == null)
+        //     {
+        //         args = new ExpandoObject();
+        //     }
+        //
+        //     var methodArgs = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(args));
+        //     var gasValue = gas ?? DefaultFuncCallAmount;
+        //     var amountValue = amount ?? DefaultFuncCallAmount;
+        //     var result = await SignAndSendTransactionAsync(contractId, new Action[] { Action.FunctionCall(methodName, methodArgs, gasValue, amountValue) });
+        //     return result;
+        // }
 
         // public async Task ProcessSingAndSendTransactionAsync()
         // {
@@ -347,7 +347,7 @@ namespace NearClientUnity
             catch (Exception e)
             {
                 var parts = e.Message.Split(':');
-                if (parts.Length > 1 && parts[1] == " Request timed out.")
+                if (parts.Length > 1 && parts[1] == "Request timed out.")
                 {
                     result = await RetryTxResultAsync(signTransaction.Item1, _accountId);
                 }

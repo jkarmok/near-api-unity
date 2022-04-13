@@ -39,7 +39,7 @@ namespace NearClientUnity.Utilities
 
                     if (rawResult.error != null && rawResult.error.data != null)
                     {
-                        throw new Exception($"[{rawResult.error.code}]: {rawResult.error.data.error_type}: {rawResult.error.data.error_message}");
+                        throw new Exception($"[{rawResult.error.code}]: {rawResult.error.data}: {rawResult.error.message}");
                     }
 
                     return rawResult.result;

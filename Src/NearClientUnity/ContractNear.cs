@@ -5,19 +5,24 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace NearClientUnity
 {
     public class ContractNear : DynamicObject, IDynamicMetaObjectProvider
     {
+        public const int DefaultFuncCallAmount = 2000000;
+
         private readonly Account _account;
+        private readonly WalletAccount _walletAccount;
         private readonly string _contractId;
         private readonly string[] _availableChangeMethods;
         private readonly string[] _availableViewMethods;
 
-        public ContractNear(Account account, string contractId, ContractOptions options)
+        public ContractNear(Account account, WalletAccount walletAccount, string contractId, ContractOptions options)
         {
             _account = account;
+            _walletAccount = walletAccount;
             _contractId = contractId;
             _availableViewMethods = options.viewMethods as string[];
             _availableChangeMethods = options.changeMethods as string[];
@@ -25,8 +30,22 @@ namespace NearClientUnity
 
         public async Task<dynamic> Change(string methodName, dynamic args, ulong? gas = null, Nullable<UInt128> amount = null)
         {
-            var rawResult = await _account.FunctionCallAsync(_contractId, methodName, args, gas, amount);
+            var rawResult = await FunctionCallAsync(_contractId, methodName, args, gas, amount);
             return Provider.GetTransactionLastResult(rawResult);
+        }
+        
+        public async Task<FinalExecutionOutcome> FunctionCallAsync(string contractId, string methodName, dynamic args, ulong? gas = null, Nullable<UInt128> amount = null)
+        {
+            if (args == null)
+            {
+                args = new ExpandoObject();
+            }
+            
+            var methodArgs = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(args));
+            var gasValue = gas ?? DefaultFuncCallAmount;
+            var amountValue = amount ?? DefaultFuncCallAmount;
+            var result = await _walletAccount.SignAndSendTransactionAsync(contractId, new Action[] { Action.FunctionCall(methodName, methodArgs, gasValue, amountValue) }, _account);
+            return result;
         }
 
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out dynamic result)

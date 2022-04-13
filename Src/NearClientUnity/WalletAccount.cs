@@ -62,7 +62,7 @@ namespace NearClientUnity
             Uri uri = new Uri(url);
             string publicKey = HttpUtility.ParseQueryString(uri.Query).Get("public_key");
             string accountId = HttpUtility.ParseQueryString(uri.Query).Get("account_id");
-            string allKeys = HttpUtility.ParseQueryString(uri.Query).Get("all_keys");
+            string[] allKeys = HttpUtility.ParseQueryString(uri.Query).Get("all_keys").Split(',');
             
             _authData.AccountId = accountId;
             _authData.AllKeys = allKeys;
@@ -80,12 +80,12 @@ namespace NearClientUnity
 
         public string GetAccountId()
         {
-            return _authData.AccountId ?? "";
+            return _authData.AccountId.Value ?? "";
         }
 
         public bool IsSignedIn()
         {
-            if (_authData.AccountId == null) return false;
+            if (GetAccountId() == "") return false;
             return true;
         }
 
@@ -116,6 +116,7 @@ namespace NearClientUnity
         {
             _authData = new ExpandoObject();
             _authData.AccountId = null;
+            _authData.AllKeys = null;
             _authStorage.DeleteKey(_authDataKey);
         }
 
@@ -178,9 +179,9 @@ namespace NearClientUnity
         }
         */
 
-        private async Task<FinalExecutionOutcome> SignAndSendTransactionAsync(string receiverId, Action[] actions, Account account, Connection connection)
+        public async Task<FinalExecutionOutcome> SignAndSendTransactionAsync(string receiverId, Action[] actions, Account account)
         {
-            PublicKey localKey = await connection.Signer.GetPublicKeyAsync();
+            PublicKey localKey = await account.Connection.Signer.GetPublicKeyAsync(account.AccountId, _networkId );
             dynamic accessKey = AccessKeyForTransaction(account, receiverId, actions, localKey);
             if (accessKey == null)
             {
@@ -193,19 +194,40 @@ namespace NearClientUnity
                 {
                     return await account.SignAndSendTransactionAsync(receiverId, actions);
                 }
-                catch (Exception ex) {
-                    // TODO: type error
-                    if (ex.Message == "NotEnoughAllowance")
+                catch (Exception e) {
+                    var parts = e.Message.Split(':');
+                    if (parts[1] == "NotEnoughAllowance")
                     {
                         accessKey = await this.AccessKeyForTransaction(account, receiverId, actions, null);
                     }
                     else {
-                        throw;
+                        throw e;
                     }
                 }
             }
-
-            var block = await connection.Provider.GetBlockAsync();
+            
+            // // TODO: block & blockHash
+            // // var block = await connection.Provider.GetBlockAsync();
+            // ByteArray32 blockHash = default;
+            //
+            // PublicKey publicKey = new PublicKey(accessKey.public_key);
+            // ulong nonce = accessKey.access_key.nonce + 1;
+            //
+            // Transaction transaction = new Transaction()
+            // {
+            //     Actions = actions,
+            //     BlockHash = blockHash,
+            //     Nonce = nonce,
+            //     PublicKey = publicKey,
+            //     ReceiverId = receiverId,
+            //     SignerId = account.AccountId
+            // };
+            var status = await account.Connection.Provider.GetStatusAsync();
+            var signTransaction = await SignedTransaction.SignTransactionAsync(receiverId, (ulong)++accessKey.access_key.nonce.Nonce, actions,
+                new ByteArray32() { Buffer = Base58.Decode(status.SyncInfo.LatestBlockHash) }, account.Connection.Signer, account.AccountId, account.Connection.NetworkId);
+            
+            RequestSignTransaction(signTransaction.Item2);
+            return null;
         }
         
         private bool AccessKeyMatchesTransaction(dynamic accessKey, string receiverId, Action[] actions)
@@ -255,7 +277,7 @@ namespace NearClientUnity
             }
 
             var walletKeys = new List<string>();
-            foreach (dynamic key in _authData.AllKeys)
+            foreach (dynamic key in _authData.AllKeys.Value)
             {
                 accessKeys.Add(key);
             }
@@ -269,6 +291,21 @@ namespace NearClientUnity
             }
             
             return null;
+        }
+
+        private void RequestSignTransaction(SignedTransaction signedTransaction)
+        {
+            var bytes = signedTransaction.ToByteArray();
+            string transaction = Convert.ToBase64String(bytes, 0, bytes.Length);
+            
+            var url = new UriBuilder(_walletBaseUrl + "/sign");
+
+            url.Query = new FormUrlEncodedContent(new Dictionary<string, string>()
+            {
+                { "transactions", transaction },
+            }).ReadAsStringAsync().Result;
+
+            _authService.OpenUrl(url.Uri.AbsoluteUri);
         }
     }
 }
