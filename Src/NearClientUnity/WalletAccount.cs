@@ -80,7 +80,7 @@ namespace NearClientUnity
 
         public string GetAccountId()
         {
-            return _authData.AccountId.Value ?? "";
+            return _authData.AccountId ?? "";
         }
 
         public bool IsSignedIn()
@@ -151,33 +151,6 @@ namespace NearClientUnity
                 throw e;
             }
         }
-        
-        /*
-         async accessKeyMatchesTransaction(accessKey, receiverId, actions) {
-            const { access_key: { permission } } = accessKey;
-            if (permission === 'FullAccess') {
-                return true;
-            }
-            if (permission.FunctionCall) {
-                const { receiver_id: allowedReceiverId, method_names: allowedMethods } = permission.FunctionCall;
-            if (allowedReceiverId === this.accountId && allowedMethods.includes(MULTISIG_HAS_METHOD)) {
-                return true;
-            }
-            if (allowedReceiverId === receiverId) {
-                    if (actions.length !== 1) {
-                        return false;
-                    }
-                    const [{ functionCall }] = actions;
-                    return functionCall &&
-                           (!functionCall.deposit || functionCall.deposit.toString() === '0') && // TODO: Should support charging amount smaller than allowance?
-                           (allowedMethods.length === 0 || allowedMethods.includes(functionCall.methodName));
-                    // TODO: Handle cases when allowance doesn't have enough to pay for gas
-                }
-            }
-            // TODO: Support other permissions than FunctionCall
-            return false;
-        }
-        */
 
         public async Task<FinalExecutionOutcome> SignAndSendTransactionAsync(string receiverId, Action[] actions, Account account)
         {
