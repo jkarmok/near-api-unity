@@ -161,7 +161,7 @@ namespace NearClientUnity
                 throw new Exception($"Cannot find matching key for transaction sent to {receiverId}");
             }
 
-            if (localKey != null && localKey.ToString() == accessKey.public_key)
+            if (localKey != null && localKey.ToString() == accessKey.public_key.ToString())
             {
                 try
                 {
@@ -195,8 +195,10 @@ namespace NearClientUnity
             //     ReceiverId = receiverId,
             //     SignerId = account.AccountId
             // };
+            
             var status = await account.Connection.Provider.GetStatusAsync();
-            var signTransaction = await SignedTransaction.SignTransactionAsync(receiverId, (ulong)++accessKey.access_key.nonce.Nonce, actions,
+            ulong nonce = ulong.Parse(accessKey.access_key.nonce.ToString()) + 1;
+            var signTransaction = await SignedTransaction.SignTransactionAsync(receiverId, nonce, actions,
                 new ByteArray32() { Buffer = Base58.Decode(status.SyncInfo.LatestBlockHash) }, account.Connection.Signer, account.AccountId, account.Connection.NetworkId);
             
             RequestSignTransaction(signTransaction.Item2);
