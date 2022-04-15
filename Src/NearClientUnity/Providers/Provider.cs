@@ -39,6 +39,7 @@ namespace NearClientUnity.Providers
         public abstract Task<FinalExecutionOutcome> GetTxStatusAsync(byte[] txHash, string accountId);
 
         public abstract Task<dynamic> QueryAsync(string path, string data);
+        public abstract Task<dynamic> QueryAsync(dynamic parameters);
 
         public abstract Task<FinalExecutionOutcome> SendTransactionAsync(SignedTransaction signedTransaction);
     }

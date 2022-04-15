@@ -144,7 +144,7 @@ namespace NearClientUnity
 
             try
             {
-                await _keyStore.RemoveKeyAsync(_networkId, PendingAccessKeyPrefix + publicKey);
+                await _keyStore.RemoveKeyAsync(_networkId, pendingAccountId);
             }
             catch (Exception e)
             {
@@ -155,7 +155,7 @@ namespace NearClientUnity
         public async Task<FinalExecutionOutcome> SignAndSendTransactionAsync(string receiverId, Action[] actions, Account account)
         {
             PublicKey localKey = await account.Connection.Signer.GetPublicKeyAsync(account.AccountId, _networkId );
-            dynamic accessKey = AccessKeyForTransaction(account, receiverId, actions, localKey);
+            dynamic accessKey = await AccessKeyForTransaction(account, receiverId, actions, localKey);
             if (accessKey == null)
             {
                 throw new Exception($"Cannot find matching key for transaction sent to {receiverId}");
@@ -205,13 +205,14 @@ namespace NearClientUnity
         
         private bool AccessKeyMatchesTransaction(dynamic accessKey, string receiverId, Action[] actions)
         {
-            if (accessKey.permission == "FullAccess")
+            if (accessKey.access_key.permission.ToString() == "FullAccess")
             {
                 return true;
             }
+            
             // else PermissionType == FunctionCall
-            List<string> allowedMethods = accessKey.permission.FunctionCall.method_names.ToList();
-            string allowedReceiverId = accessKey.permission.FunctionCall.receiver_id;
+            var allowedMethods = accessKey.access_key.permission.FunctionCall.method_names;
+            string allowedReceiverId = accessKey.access_key.permission.FunctionCall.receiver_id;
             if (allowedReceiverId == GetAccountId() && allowedMethods.Contains("add_request_and_confirm"))
             {
                 return true;
@@ -242,22 +243,18 @@ namespace NearClientUnity
                 accessKeys.Add(key);
             }
             
-            var accessKey = accessKeys.ToList().Find(key => key.public_key.toString() == localKey.ToString());
+            var accessKey = accessKeys.Find(key => key.public_key.ToString() == localKey.ToString());
             
-            if (accessKey && AccessKeyMatchesTransaction(accessKey, receiverId, actions))
+            if (accessKey != null && AccessKeyMatchesTransaction(accessKey, receiverId, actions))
             {
                 return accessKey;
             }
 
-            var walletKeys = new List<string>();
-            foreach (dynamic key in _authData.AllKeys.Value)
-            {
-                accessKeys.Add(key);
-            }
+            var walletKeys = new List<string>(_authData.AllKeys);
             
             foreach (var key in accessKeys)
             {
-                if (walletKeys.Contains(key.public_key) && AccessKeyMatchesTransaction(key, receiverId, actions))
+                if (walletKeys.Contains(key.public_key.ToString()) && AccessKeyMatchesTransaction(key, receiverId, actions))
                 {
                     return key;
                 }

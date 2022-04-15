@@ -208,7 +208,12 @@ namespace NearClientUnity
         /// Returns array of {access_key: AccessKey, public_key: PublicKey} items.
         public async Task<dynamic> GetAccessKeysAsync()
         {
-            var response = await _connection.Provider.QueryAsync($"access_key/{_accountId}", "");
+            dynamic parameters = new ExpandoObject();
+            parameters.request_type = "view_access_key_list";
+            parameters.account_id = AccountId;
+            parameters.finality = "optimistic";
+            
+            var response = await _connection.Provider.QueryAsync(parameters);
             return response;
         }
 
@@ -219,7 +224,7 @@ namespace NearClientUnity
             var accessKeys = await GetAccessKeysAsync();
             dynamic result = new ExpandoObject();
             var authorizedApps = new List<dynamic>();
-
+        
             foreach (var key in accessKeys)
             {
                 var rawPermission = key.access_key.permission;
@@ -232,7 +237,7 @@ namespace NearClientUnity
                 authorizedApp.PublicKey = key.public_key;
                 authorizedApps.Add(authorizedApp);
             }
-
+        
             result.AuthorizedApps = authorizedApps.ToArray();
             result.Transactions = Array.Empty<dynamic>();
             return result;

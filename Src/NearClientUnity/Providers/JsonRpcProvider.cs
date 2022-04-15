@@ -74,7 +74,7 @@ namespace NearClientUnity.Providers
             var parameters = new dynamic[2];
             parameters[0] = path;
             parameters[1] = data;
-
+    
             try
             {
                 var result = await SendJsonRpc("query", parameters);
@@ -83,6 +83,19 @@ namespace NearClientUnity.Providers
             catch (Exception e)
             {
                 throw new Exception($"Quering {path} failed: { e.Message}.");
+            }
+        }
+        
+        public override async Task<dynamic> QueryAsync(dynamic parameters)
+        {
+            try
+            {
+                var result = await SendJsonRpc("query", new dynamic[] { parameters });
+                return result;
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Quering {parameters.request_type} failed: { e.Message}.");
             }
         }
 
@@ -101,10 +114,12 @@ namespace NearClientUnity.Providers
             dynamic request = new ExpandoObject();
 
             request.method = method;
-            request.parameters = parameters;
             request.id = _id++;
             request.jsonrpc = "2.0";
+            request.parameters = parameters.Length == 1 ? parameters[0] : parameters;
+            
             var requestString = JsonConvert.SerializeObject(request).Replace("\"parameters\":", "\"params\":");
+
             try
             {
                 var result = await Web.FetchJsonAsync(_connection, requestString);
