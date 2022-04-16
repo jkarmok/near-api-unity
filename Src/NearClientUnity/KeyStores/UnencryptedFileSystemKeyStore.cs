@@ -1,4 +1,6 @@
-﻿using NearClientUnity.Utilities;
+﻿using System;
+using System.Collections.Generic;
+using NearClientUnity.Utilities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -78,8 +80,15 @@ namespace NearClientUnity.KeyStores
         public override async Task<KeyPair> GetKeyAsync(string networkId, string accountId)
         {
             if (!File.Exists(GetKeyFilePath(networkId, accountId))) return null;
-            var accountKeyPair = await ReadKeyFile(GetKeyFilePath(networkId, accountId));
-            return accountKeyPair[1];
+            try
+            {
+                var accountKeyPair = await ReadKeyFile(GetKeyFilePath(networkId, accountId));
+                return KeyPair.FromString(accountKeyPair[1].ToString());
+            }
+            catch (KeyNotFoundException e)
+            {
+                return null;
+            }
         }
 
         public override async Task<string[]> GetNetworksAsync()

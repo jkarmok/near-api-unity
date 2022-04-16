@@ -112,12 +112,13 @@ namespace NearClientUnity
             return _authService.OpenUrl(url.Uri.AbsoluteUri);
         }
 
-        public void SignOut()
+        public async void SignOut()
         {
             _authData = new ExpandoObject();
             _authData.AccountId = null;
             _authData.AllKeys = null;
             _authStorage.DeleteKey(_authDataKey);
+            await _keyStore.ClearAsync();
         }
 
         private async Task MoveKeyFromTempToPermanent(string accountId, string publicKey)
@@ -262,7 +263,15 @@ namespace NearClientUnity
                 return accessKey;
             }
 
-            var walletKeys = new List<string>(_authData.AllKeys);
+            List<string> walletKeys;
+            if (_authData.AllKeys is Array)
+            {
+                walletKeys = new List<string>(_authData.AllKeys);
+            }
+            else
+            {
+                walletKeys = new List<string>(_authData.AllKeys.ToObject<string[]>());
+            }
             
             foreach (var key in accessKeys)
             {

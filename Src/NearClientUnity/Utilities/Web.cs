@@ -13,7 +13,6 @@ namespace NearClientUnity.Utilities
     {
         public static async Task<dynamic> FetchJsonAsync(string url, string json = "")
         {
-            Debug.Log("url: " + url + " json: " + json);
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
