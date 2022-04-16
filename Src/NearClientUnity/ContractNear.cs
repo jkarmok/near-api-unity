@@ -11,7 +11,7 @@ namespace NearClientUnity
 {
     public class ContractNear : DynamicObject, IDynamicMetaObjectProvider
     {
-        public const int DefaultFuncCallAmount = 2000000;
+        public const ulong DEFAULT_FUNCTION_CALL_GAS = 30000000000000;
 
         private readonly Account _account;
         private readonly WalletAccount _walletAccount;
@@ -31,6 +31,10 @@ namespace NearClientUnity
         public async Task<dynamic> Change(string methodName, dynamic args, ulong? gas = null, Nullable<UInt128> amount = null)
         {
             var rawResult = await FunctionCallAsync(_contractId, methodName, args, gas, amount);
+            if (rawResult == null)
+            {
+                return null;
+            }
             return Provider.GetTransactionLastResult(rawResult);
         }
         
@@ -42,8 +46,8 @@ namespace NearClientUnity
             }
             
             var methodArgs = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(args));
-            var gasValue = gas ?? DefaultFuncCallAmount;
-            var amountValue = amount ?? DefaultFuncCallAmount;
+            var gasValue = gas ?? DEFAULT_FUNCTION_CALL_GAS;
+            var amountValue = amount ?? 0;
             var result = await _walletAccount.SignAndSendTransactionAsync(contractId, new Action[] { Action.FunctionCall(methodName, methodArgs, gasValue, amountValue) }, _account);
             return result;
         }

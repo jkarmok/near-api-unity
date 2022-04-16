@@ -168,12 +168,22 @@ namespace NearClientUnity
                     return await account.SignAndSendTransactionAsync(receiverId, actions);
                 }
                 catch (Exception e) {
-                    var parts = e.Message.Split(':');
-                    if (parts[1] == "NotEnoughAllowance")
+                    // TODO: the exception
+
+                    // var parts = e.Message.Split(':');
+                    // if (parts[1] == "NotEnoughAllowance")
+                    // {
+                    //     accessKey = await this.AccessKeyForTransaction(account, receiverId, actions, null);
+                    // }
+                    // else {
+                    //     throw e;
+                    // }
+                    try
                     {
-                        accessKey = await this.AccessKeyForTransaction(account, receiverId, actions, null);
+                        accessKey = await AccessKeyForTransaction(account, receiverId, actions, null);
                     }
-                    else {
+                    catch
+                    {
                         throw e;
                     }
                 }

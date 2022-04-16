@@ -116,7 +116,7 @@ namespace NearClientUnity.Providers
             request.method = method;
             request.id = _id++;
             request.jsonrpc = "2.0";
-            request.parameters = parameters.Length == 1 ? parameters[0] : parameters;
+            request.parameters = parameters.Length == 1 && parameters[0] is not string ? parameters[0] : parameters;
             
             var requestString = JsonConvert.SerializeObject(request).Replace("\"parameters\":", "\"params\":");
 
