@@ -12,7 +12,7 @@ namespace NearClientUnity.Providers
         public static FinalExecutionOutcome FromDynamicJsonObject(dynamic jsonObject)
         {
             var receipts = new List<ExecutionOutcomeWithId>();
-            foreach (var receipt in jsonObject.receipts)
+            foreach (var receipt in jsonObject.receipts_outcome)
             {
                 receipts.Add(ExecutionOutcomeWithId.FromDynamicJsonObject(receipt));
             }
@@ -20,7 +20,7 @@ namespace NearClientUnity.Providers
             {
                 Receipts = receipts.ToArray(),
                 Status = FinalExecutionStatus.FromDynamicJsonObject(jsonObject.status),
-                Transaction = ExecutionOutcomeWithId.FromDynamicJsonObject(jsonObject.transaction)
+                Transaction = ExecutionOutcomeWithId.FromDynamicJsonObject(jsonObject.transaction_outcome)
             };
             return result;
         }
