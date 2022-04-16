@@ -29,6 +29,23 @@ namespace NearClientUnity
             return FromRawDataStream(stream);
         }
 
+        public static async Task<string> TransactionToBase64(string receiverId, ulong nonce, Action[] actions, ByteArray32 blockHash, Signer signer, string accountId, string networkId)
+        {
+            var publicKey = await signer.GetPublicKeyAsync(accountId, networkId);
+            var transaction = new Transaction
+            {
+                SignerId = accountId,
+                PublicKey = publicKey,
+                Nonce = nonce,
+                ReceiverId = receiverId,
+                Actions = actions,
+                BlockHash = blockHash
+            };
+
+            byte[] transactionBytes = transaction.ToByteArray();
+            return Convert.ToBase64String(transactionBytes, 0 , transactionBytes.Length);
+        }
+
         public static async Task<Tuple<byte[], SignedTransaction>> SignTransactionAsync(string receiverId, ulong nonce, Action[] actions, ByteArray32 blockHash, Signer signer, string accountId, string networkId)
         {
             var publicKey = await signer.GetPublicKeyAsync(accountId, networkId);

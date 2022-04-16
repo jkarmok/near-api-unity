@@ -198,10 +198,10 @@ namespace NearClientUnity
             
             var status = await account.Connection.Provider.GetStatusAsync();
             ulong nonce = ulong.Parse(accessKey.access_key.nonce.ToString()) + 1;
-            var signTransaction = await SignedTransaction.SignTransactionAsync(receiverId, nonce, actions,
+            var transaction = await SignedTransaction.TransactionToBase64(receiverId, nonce, actions,
                 new ByteArray32() { Buffer = Base58.Decode(status.SyncInfo.LatestBlockHash) }, account.Connection.Signer, account.AccountId, account.Connection.NetworkId);
             
-            RequestSignTransaction(signTransaction.Item2);
+            RequestSignTransaction(transaction);
             return null;
         }
         
@@ -265,11 +265,8 @@ namespace NearClientUnity
             return null;
         }
 
-        private void RequestSignTransaction(SignedTransaction signedTransaction)
+        private void RequestSignTransaction(string transaction)
         {
-            var bytes = signedTransaction.ToByteArray();
-            string transaction = Convert.ToBase64String(bytes, 0, bytes.Length);
-            
             var url = new UriBuilder(_walletBaseUrl + "/sign");
 
             url.Query = new FormUrlEncodedContent(new Dictionary<string, string>()
