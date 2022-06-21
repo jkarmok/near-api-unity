@@ -4,11 +4,11 @@ namespace NearClientUnity.Providers
 {
     public class FinalExecutionOutcome
     {
-        public ExecutionOutcomeWithId[] Receipts { get; set; }
+        public ExecutionOutcomeWithId[] ReceiptsOutcome { get; set; }
         public FinalExecutionStatus Status { get; set; }
         public FinalExecutionStatusBasic StatusBasic { get; set; }
-        public ExecutionOutcomeWithId Transaction { get; set; }
-
+        public dynamic Transaction { get; set; }
+        public ExecutionOutcomeWithId TransactionOutcome { get; set; }
         public static FinalExecutionOutcome FromDynamicJsonObject(dynamic jsonObject)
         {
             var receipts = new List<ExecutionOutcomeWithId>();
@@ -18,9 +18,10 @@ namespace NearClientUnity.Providers
             }
             var result = new FinalExecutionOutcome()
             {
-                Receipts = receipts.ToArray(),
+                ReceiptsOutcome = receipts.ToArray(),
                 Status = FinalExecutionStatus.FromDynamicJsonObject(jsonObject.status),
-                Transaction = ExecutionOutcomeWithId.FromDynamicJsonObject(jsonObject.transaction_outcome)
+                TransactionOutcome = ExecutionOutcomeWithId.FromDynamicJsonObject(jsonObject.transaction_outcome),
+                Transaction = jsonObject.transaction
             };
             return result;
         }

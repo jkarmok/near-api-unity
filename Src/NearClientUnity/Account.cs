@@ -14,7 +14,7 @@ namespace NearClientUnity
         // Default amount of tokens to be send with the function calls. Used to pay for the fees
         // incurred while running the contract execution. The unused amount will be refunded back to
         // the originator.
-        // public const int DefaultFuncCallAmount = 2000000;
+        public const int DefaultFuncCallAmount = 2000000;
 
         private const int TxStatusRetryNumber = 10;
         private const int TxStatusRetryWait = 500;
@@ -185,26 +185,22 @@ namespace NearClientUnity
             }
         }
 
-        // public async Task<FinalExecutionOutcome> FunctionCallAsync(string contractId, string methodName, dynamic args, ulong? gas = null, Nullable<UInt128> amount = null)
-        // {
-        //     if (args == null)
-        //     {
-        //         args = new ExpandoObject();
-        //     }
-        //
-        //     var methodArgs = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(args));
-        //     var gasValue = gas ?? DefaultFuncCallAmount;
-        //     var amountValue = amount ?? DefaultFuncCallAmount;
-        //     var result = await SignAndSendTransactionAsync(contractId, new Action[] { Action.FunctionCall(methodName, methodArgs, gasValue, amountValue) });
-        //     return result;
-        // }
+        public async Task<FinalExecutionOutcome> FunctionCallAsync(string contractId, string methodName, dynamic args, ulong? gas = null, Nullable<UInt128> amount = null)
+        {
+            if (args == null)
+            {
+                args = new ExpandoObject();
+            }
 
-        // public async Task ProcessSingAndSendTransactionAsync()
-        // {
-        //     var localKey = await _connection.Signer.GetPublicKeyAsync();
-        //     var accessKey = 
-        // }
-        
+            var methodArgs = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(args));
+            var gasValue = gas ?? DefaultFuncCallAmount;
+            var amountValue = amount ?? DefaultFuncCallAmount;
+            var result = await SignAndSendTransactionAsync(contractId, new Action[] { Action.FunctionCall(methodName, methodArgs, gasValue, amountValue) });
+            return result;
+        }
+
+ 
+
         /// Returns array of {access_key: AccessKey, public_key: PublicKey} items.
         public async Task<dynamic> GetAccessKeysAsync()
         {
@@ -362,9 +358,9 @@ namespace NearClientUnity
                 }
             }
 
-            var tempFlatLogs = new ExecutionOutcomeWithId[1 + result.Receipts.Length];
-            tempFlatLogs[0] = result.Transaction;
-            Array.Copy(result.Receipts, 0, tempFlatLogs, 1, result.Receipts.Length);
+            var tempFlatLogs = new ExecutionOutcomeWithId[1 + result.ReceiptsOutcome.Length];
+            tempFlatLogs[0] = result.TransactionOutcome;
+            Array.Copy(result.ReceiptsOutcome, 0, tempFlatLogs, 1, result.ReceiptsOutcome.Length);
 
             var flatLogs = new List<string>();
 
@@ -377,7 +373,7 @@ namespace NearClientUnity
 
             if (result.Status != null && result.Status.Failure != null)
             {
-                throw new Exception($"Transaction {result.Transaction.Id} failed. {result.Status.Failure.ErrorMessage ?? ""}");
+                throw new Exception($"Transaction {result.TransactionOutcome.Id} failed. {JsonConvert.SerializeObject(result.Status.Failure)}");
             }
 
             // ToDo: Add typed error handling
