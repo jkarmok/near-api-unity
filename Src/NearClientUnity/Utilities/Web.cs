@@ -5,8 +5,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
-using UnityEngine;
-
+ 
 namespace NearClientUnity.Utilities
 {
     public static class Web
@@ -45,7 +44,7 @@ namespace NearClientUnity.Utilities
                 }
                 else
                 {
-                    throw new HttpException((int)response.StatusCode, response.Content.ToString());
+                    throw new Exception($"StatusCode:{(int)response.StatusCode} Content:{response.Content.ToString()}");
                 }
             }
         }

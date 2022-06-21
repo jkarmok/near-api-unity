@@ -125,9 +125,9 @@ namespace NearClientUnity.Providers
                 var result = await Web.FetchJsonAsync(_connection, requestString);
                 return result;
             }
-            catch (HttpException e)
+            catch (Exception e)
             {
-                throw new Exception($"{e.ErrorCode}: {e.Message}");
+                throw e;
             }
         }
     }

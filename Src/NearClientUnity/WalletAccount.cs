@@ -9,7 +9,6 @@ using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Web;
-using System.Web.Util;
 using NearClientUnity.Providers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -58,7 +57,6 @@ namespace NearClientUnity
 
         public async Task CompleteSignIn(string url)
         {
-            HttpEncoder.Current = HttpEncoder.Default;
             Uri uri = new Uri(url);
             string publicKey = HttpUtility.ParseQueryString(uri.Query).Get("public_key");
             string accountId = HttpUtility.ParseQueryString(uri.Query).Get("account_id");
